@@ -4,5 +4,7 @@
     <SingleInt state="Ok" value="0">OK</SingleInt>
     <SingleInt state="Warning" value="1">Check required</SingleInt>
     <SingleInt state="Error" value="2">Failed</SingleInt>
+    <SingleInt state="Ok" value="3">Never run</SingleInt>
+    <SingleInt state="Warning" value="4">Running</SingleInt>
   </Lookups>
 </ValueLookup>

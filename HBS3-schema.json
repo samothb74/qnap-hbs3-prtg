@@ -15,6 +15,10 @@
   "progressPath": ["statistics", "progress"],
   "progressMultiplier": 1,
   "stateMap": {
+    "Never Run": "NeverRun",
+    "NeverRun": "NeverRun",
+    "Finished": "OK",
+    "Success": "OK",
     "Running": "Running",
     "Stopped": "Stopped",
     "Failed": "Error"

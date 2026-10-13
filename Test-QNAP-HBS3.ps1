@@ -16,7 +16,7 @@ try {
     Check ($missingConfig.prtg.text -like '*missing or inaccessible*') 'Missing configuration must have a precise safe message'
     $invalidUuid = [xml](& $sensor -JobUuid 'invalid')
     Check ($invalidUuid.prtg.text -like '*valid UUID*') 'Invalid UUID must have a precise safe message'
-    foreach ($case in @(@('Running',0),@('Stopped',1),@('Failed',2))) {
+    foreach ($case in @(@('Running',4),@('Stopped',1),@('Failed',2),@('Success',0),@('Finished',0))) {
         $job = @{_id=$id;enable=$true;statistics=@{status=$case[0];local_files_remaining=7;local_bytes_remaining=1073741824;progress=30}}
         $xml = Run-Fixture @{jobs=@($job)}
         Check ($xml.prtg.result.Count -eq 6) 'Expected six channels'
@@ -42,12 +42,27 @@ try {
     $xml = Run-Fixture @{jobs=@($job)}
     Check ([double]$xml.prtg.result[0].value -eq 2) 'Failed must remain Down without counters'
     Check ([double]$xml.prtg.result[2].value -eq -1) 'Missing counters must be unavailable'
+    $job.statistics = @{status='Success';error_count=0}
+    $xml = Run-Fixture @{jobs=@($job)}
+    Check ($xml.prtg.text -eq 'HBS3 - OK') 'Successful last run must remain OK'
+    Check ([double]$xml.prtg.result[0].value -eq 0) 'Success without counters must remain healthy'
+    Check ([double]$xml.prtg.result[1].value -eq 0) 'Completed job must be idle'
+    Check ([double]$xml.prtg.result[5].value -eq 0) 'Missing counters must remain marked unavailable'
+    $job.statistics.error_count = 1
+    $xml = Run-Fixture @{jobs=@($job)}
+    Check ([double]$xml.prtg.result[0].value -eq 1) 'Success with errors must warn'
     $job.Remove('statistics')
     $xml = Run-Fixture @{jobs=@($job)}
-    Check ([double]$xml.prtg.result[0].value -eq 1) 'Missing history must warn'
+    Check ([double]$xml.prtg.result[0].value -eq 3) 'Missing history must use the Never run lookup entry'
+    Check ([double]$xml.prtg.result[1].value -eq 0) 'Never run must be idle'
+    Check ([double]$xml.prtg.result[2].value -eq -1) 'Never run must not invent counters'
+    $job.statistics = @{status='Never Run';error_count=0}
+    $xml = Run-Fixture @{jobs=@($job)}
+    Check ([double]$xml.prtg.result[0].value -eq 3) 'Explicit Never Run must use its lookup entry'
     $job.enable = $false
     $xml = Run-Fixture @{jobs=@($job)}
     Check ($xml.prtg.text -like '*Disabled*') 'Disabled job must warn'
+    Check ([double]$xml.prtg.result[0].value -eq 1) 'Disabled job must retain Warning'
     Check ((Run-Fixture @{jobs=@($job);has_more=$true}).prtg.error -eq '1') 'Pagination must not be silently ignored'
     # Mock HTTP transport: verify POST, cookies and headers without any network call.
     $mockState = @{calls=0}
@@ -86,8 +101,13 @@ try {
     Check ($out[0] -notmatch '<customunit>\s*</customunit>') 'Optional custom units must not be empty elements'
     $healthLookup = [xml](Get-Content -LiteralPath (Join-Path $PSScriptRoot 'custom.qnap.hbs3.health.ovl') -Raw)
     Check ($healthLookup.ValueLookup.Lookups.SingleInt[0].state -eq 'Ok') 'Health zero must be green'
+    $neverRunEntry = @($healthLookup.ValueLookup.Lookups.SingleInt | Where-Object { $_.value -eq '3' })
+    Check ($neverRunEntry.Count -eq 1 -and $neverRunEntry[0].state -eq 'Ok' -and $neverRunEntry[0].InnerText -eq 'Never run') 'Never run must have a green readable label'
     $runningLookup = [xml](Get-Content -LiteralPath (Join-Path $PSScriptRoot 'custom.qnap.hbs3.running.ovl') -Raw)
     Check ($runningLookup.ValueLookup.Lookups.SingleInt[0].state -eq 'None') 'Inactive must be neutral'
+    Check ($runningLookup.ValueLookup.Lookups.SingleInt[1].state -eq 'Warning') 'Running indicator must warn'
+    $activeEntry = @($healthLookup.ValueLookup.Lookups.SingleInt | Where-Object { $_.value -eq '4' })
+    Check ($activeEntry.Count -eq 1 -and $activeEntry[0].state -eq 'Warning' -and $activeEntry[0].InnerText -eq 'Running') 'Primary health must show Running as Warning'
     Check ($out[0] -notmatch 'test-password|test-sid|monitor') 'Secret leaked in XML'
     $mockState.loginContent = '<QDocRoot><authPassed>0</authPassed></QDocRoot>'
     $xml = [xml](& $sensor -NasUrl 'https://nas.example' -JobUuid $id -CredentialSource Parameters -Username monitor -Password test-password)

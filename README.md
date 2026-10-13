@@ -49,7 +49,7 @@ Under AllSigned, a trusted signature is required even after unblocking. Inspect 
 
 | Channel | Meaning |
 |---|---|
-| Job health | 0 = OK, 1 = check required, 2 = failed |
+| Job health | 0 = OK, 1 = check required, 2 = failed, 3 = never run, 4 = running |
 | Job running | 1 = running, 0 = inactive |
 | Files remaining | `statistics.local_files_remaining` |
 | Remaining size | `statistics.local_bytes_remaining` in bytes |
@@ -58,11 +58,19 @@ Under AllSigned, a trusted signature is required even after unblocking. Inspect 
 
 Last Message is `HBS3 - Running`, or the mapped state. The script does not start, stop or modify a job.
 
-The bundled state map recognizes Running, Stopped and Failed. Stopped produces Warning, Failed produces Down, and disabled jobs or jobs without returned statistics produce Warning. NeverRun means no statistics were returned, not proof the job has never executed. Unknown states fail explicitly. Add the exact successful-completion label to stateMap with value `OK` after checking the response from your NAS. This API may vary by HBS3 version; no universal list of state labels is claimed.
+The bundled state map recognizes Running, Stopped, Failed, Finished, Success, Never Run and NeverRun. Finished/Success map to OK and remain healthy while the latest returned run is successful. Running intentionally puts the sensor in Warning, rendered yellow/orange by PRTG. Stopped and disabled jobs also produce Warning; Failed produces Down. NeverRun, including a job without returned statistics, stays green with the distinct label Never run. This is a monitoring policy, not evidence of a successful backup or proof that the job has never executed. Other labels remain unknown until explicitly configured. This API may vary by HBS3 version; no universal list of state labels is claimed.
 
-Missing counters on an inactive/failed job are represented by -1, with Counters available = 0. Exclude these sentinels from reports. Missing or invalid counters on a running/successful job produce an error. Error counts above zero promote an otherwise healthy job to Warning. Counters can describe the latest run, and zero remaining files does not establish success. Pagination (`has_more=true`) is refused rather than silently ignoring jobs.
+Select Job health as the primary channel to show Running, Never run or OK beneath the sensor name. Warning notification triggers can fire during normal job execution because Running intentionally uses PRTG's Warning state. Failed jobs retain their channels and the native lookup error message, including the HBS3 - Error text.
+
+Unavailable counters on an inactive/failed/successful job are represented by -1, with Counters available = 0. Exclude these sentinels from reports. Missing or invalid counters on a running job produce an error. Error counts above zero promote an otherwise healthy job to Warning. Counters can describe the latest run, and zero remaining files does not establish success. Pagination (`has_more=true`) is refused rather than silently ignoring jobs.
 
 ## Tests and troubleshooting
+
+### Updating an existing installation
+
+Replace the PS1, schema JSON and both .ovl files, then reload lookups before scanning. The health lookup must contain value 3 (Never run, Ok) and value 4 (Running, Warning). An Undefined lookup value (4) error means PRTG has not loaded the updated health definition, or the channel uses the wrong lookup. Keep the lookup IDs unchanged.
+
+### Offline tests and sensor logs
 
 ```powershell
 powershell.exe -NoProfile -File .\Test-QNAP-HBS3.ps1

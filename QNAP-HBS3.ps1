@@ -174,8 +174,8 @@ try {
     }
     if ($job.enable -eq $false) { $state = 'Disabled' }
     $health = switch ($state) {
-        'OK' { 0 }; 'Running' { 0 }; 'Warning' { 1 }; 'Error' { 2 }
-        'Paused' { 1 }; 'Disabled' { 1 }; 'NeverRun' { 1 }
+        'OK' { 0 }; 'Running' { 4 }; 'Warning' { 1 }; 'Error' { 2 }
+        'Paused' { 1 }; 'Disabled' { 1 }; 'NeverRun' { 3 }
         'Stopped' { 1 }
     }
     $stage = 'HBS3 counters'
@@ -187,13 +187,13 @@ try {
         if ($remaining % 1 -ne 0 -or $bytes % 1 -ne 0 -or $percentage -gt 100 -or
             [double]$config.progressMultiplier -notin @(1,100)) { throw 'Inconsistent counters' }
     } catch {
-        if ($state -in @('Running','OK','Warning')) { throw }
+        if ($state -in @('Running','Warning')) { throw }
         # Stable channels: -1 means unavailable, never a fabricated zero.
         $available = 0
         $remaining = -1; $bytes = -1; $percentage = -1
     }
     if ($hasStatistics -and $null -ne $statistics.Value.PSObject.Properties['error_count']) {
-        if ((Read-Number $job @('statistics','error_count')) -gt 0 -and $health -eq 0) { $health = 1 }
+        if ((Read-Number $job @('statistics','error_count')) -gt 0 -and $health -in @(0,3,4)) { $health = 1 }
     }
     $xml = '<prtg>'
     $xml += Channel 'Job health' $health 'Custom' '<valuelookup>custom.qnap.hbs3.health</valuelookup><limitmode>0</limitmode>'
