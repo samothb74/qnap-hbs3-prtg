@@ -1,0 +1,14 @@
+# Local secrets and production responses
+.env
+.env.*
+*.log
+*.Data.txt
+Result of Sensor*
+*local*.json
+*private*.json
+credentials*
+*.pfx
+*.p12
+*.key
+*.zip
+work/

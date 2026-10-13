@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValueLookup id="custom.qnap.hbs3.health" desiredValue="0" undefinedState="Error" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="PaeValueLookup.xsd">
+  <Lookups>
+    <SingleInt state="Ok" value="0">OK</SingleInt>
+    <SingleInt state="Warning" value="1">Check required</SingleInt>
+    <SingleInt state="Error" value="2">Failed</SingleInt>
+  </Lookups>
+</ValueLookup>

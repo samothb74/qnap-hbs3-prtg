@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "verifiedAgainstNas": true,
+  "cookies": [
+    {"name": "NAS_SID", "source": "sid"},
+    {"name": "NAS_USER", "source": "username"},
+    {"name": "NAS_PW_STATUS", "source": "literal", "value": "0"},
+    {"name": "home", "source": "literal", "value": "1"}
+  ],
+  "jobsPath": ["jobs"],
+  "uuidPath": ["_id"],
+  "statePath": ["statistics", "status"],
+  "remainingFilesPath": ["statistics", "local_files_remaining"],
+  "remainingBytesPath": ["statistics", "local_bytes_remaining"],
+  "progressPath": ["statistics", "progress"],
+  "progressMultiplier": 1,
+  "stateMap": {
+    "Running": "Running",
+    "Stopped": "Stopped",
+    "Failed": "Error"
+  }
+}
